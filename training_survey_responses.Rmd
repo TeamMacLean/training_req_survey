@@ -1,0 +1,33 @@
+---
+title: "Training Requirements"
+author: "Dan MacLean"
+date: "22/05/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(googlesheets)
+library(magrittr)
+library(ggplot2)
+```
+
+
+```{r load_ws, echo=FALSE, message=FALSE}
+gs_auth(token = "~/Desktop/googlesheets_token.rds")
+train <- gs_title("Training Requirements (Responses)")
+data <- gs_read(train, ws = "Form Responses 1")
+colnames(data) <- c("time", "group", "Bash", "Python", "ggplot2", "dplyr", "MutGen", "Galaxy", "other")
+data <- data[-9]
+
+data <- reshape2::melt(data, id.vars=c("time", "group"), measure.vars=c("Bash", "Python", "ggplot2", "dplyr", "MutGen", "Galaxy"), variable.name="Course", value.name="Response")
+```
+
+```{r prep_plot, echo=FALSE, message=FALSE}
+sm_data <- dplyr::group_by(data, group, Course) %>% dplyr::count(Response) %>% dplyr::mutate(prop = prop.table(n))
+sm_data$group <- as.factor(sm_data$group)
+sm_data$Response <- as.factor(sm_data$Response)
+
+p <- ggplot(sm_data) + aes(Course, prop) + geom_bar(stat="identity", aes(colour=Response, fill=Response)) + facet_wrap( ~ group) + theme_bw() 
+p
+```
